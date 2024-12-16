@@ -4,7 +4,6 @@ using UnityEngine.EventSystems;
 public class Learn2Script : MonoBehaviour
 {
     public DataScript data;
-    public Button mainButton;
     void Start()
     {
         data.GetWords(data.S1ItemIndex);
@@ -12,8 +11,8 @@ public class Learn2Script : MonoBehaviour
         hText.text = data.Topic(data.S1ItemIndex);
         for (int i = 0; i < data.WordCount; i++)
         {
-            var b = Instantiate(mainButton);
-            b.GetComponentInChildren<Text>().text = data.Word(i);
+			var b = Instantiate(data.mainButton);
+			b.GetComponentInChildren<Text>().text = data.Word(i);
             b.transform.SetParent(transform);
             b.transform.localScale = Vector2.one;
         }

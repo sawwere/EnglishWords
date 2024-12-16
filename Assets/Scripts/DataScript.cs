@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using UnityEngine.UI;
+using System.Text.RegularExpressions;
 
 [System.Serializable] public struct WordInfo
 {
@@ -36,12 +37,17 @@ public class DataScript : ScriptableObject
 	int ppredInd;
 	System.Random r = new System.Random();
 	[SerializeField] List<int> testInd = new List<int>();
+	public bool OptAudioEnRu;
+	public int OptTopicName;
+	public int OptVolume = 10;
+	public Button mainButton;
 
 	void Awake()
     {
         data = new List<string>(Resources.LoadAll<TextAsset>("Data")
         .Select(e => e.name));
-        SetLevel(level);
+		LoadPrefabs();
+		SetLevel(level);
     }
     public int Level { get => level; }
     public void SetLevel(int newLevel)
@@ -50,9 +56,16 @@ public class DataScript : ScriptableObject
         topics = new List<string>(data.Where(e => e.StartsWith((newLevel + 1) + ".")));
     }
     public int TopicCount { get => topics.Count; }
-    public string Topic(int i) => topics[i].Remove(0, 2);
+	public string Topic(int i)
+	{
+		string s = topics[i].Remove(0, 2);
+		if (OptTopicName == 0 || level == 3)
+			return s;
+		var m = Regex.Match(s, @"(\d\d\.)(.*) \((.*)\)");
+		return m.Groups[1].Value + m.Groups[OptTopicName + 1].Value;
+	}
 
-    void Reset() => Awake();
+	void Reset() => Awake();
 
     public void GetWords(int topicIndex, bool reset = true)
     {
@@ -75,7 +88,8 @@ public class DataScript : ScriptableObject
         var audio = Camera.main.GetComponent<AudioSource>();
         audio.clip = Resources.Load<AudioClip>("Sounds/"
         + words[wordIndex].Au);
-        audio.Play();
+		audio.volume = OptVolume / 10.0f;
+		audio.Play();
     }
 
     public void SetNavigationDown(Selectable from, Selectable to)
@@ -186,6 +200,8 @@ public class DataScript : ScriptableObject
 			for (int i = 1; i < 6; i++)
 				labels[i] = words[testInd[i]].Ru;
 		}
+		if (TestType == 2 || OptAudioEnRu)
+			PlayAudio(testInd[0]);
 		return true;
 	}
 
@@ -220,9 +236,36 @@ public class DataScript : ScriptableObject
 		if (test.Mark > 2)
 			results.Add(test);
 	}
+
+	void LoadPrefabs()
+	{
+		mainButton = Resources.Load<GameObject>("Prefabs/MainButton")
+		.GetComponent<Button>();
+	}
+
+	public int OptMainButtonFontSize
+	{
+		get => mainButton.GetComponentInChildren<Text>().fontSize;
+		set => mainButton.GetComponentInChildren<Text>().fontSize = value;
+	}
+	public int GetHeight(Component comp) =>
+	(int)comp.GetComponent<RectTransform>().sizeDelta.y;
+	public void SetHeight(Component comp, int value)
+	{
+		RectTransform rt = comp.GetComponent<RectTransform>();
+		Vector2 sd = rt.sizeDelta;
+		sd.y = value;
+		rt.sizeDelta = sd;
+	}
+	public int OptMainButtonHeight
+	{
+		get => GetHeight(mainButton);
+		set => SetHeight(mainButton, value);
+	}
+
 }
 
-	[System.Serializable]
+[System.Serializable]
 public class TestInfo
 {
 	public int Answers;
