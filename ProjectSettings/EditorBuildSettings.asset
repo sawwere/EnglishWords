@@ -26,4 +26,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/S6Learn2.unity
     guid: 313a0709ba4b6ac4ba070c32fe96caf7
+  - enabled: 1
+    path: Assets/Scenes/S7Control2.unity
+    guid: 9e8758aade7b13f48853b157cc4ead6b
   m_configObjects: {}

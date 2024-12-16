@@ -20,14 +20,24 @@ using UnityEngine.UI;
 [CreateAssetMenu(fileName = "GameData", menuName = "Game Data", order = 51)]
 public class DataScript : ScriptableObject
 {
-    [SerializeField] int level;
+	public string TestTopicsToString() => testTopics[level];
+	public int TestType;
+	[SerializeField] int level;
     [SerializeField] List<string> data;
     [SerializeField] List<string> topics;
     [SerializeField] List<WordInfo> words;
-    [SerializeField] int[] itemIndex = new int[4];
-    [SerializeField] float[] scrollbarValue = new float[4] { 1, 1, 1, 1 };
+	[SerializeField] int[] itemIndex = new int[8];
+	[SerializeField] float[] scrollbarValue = new float[8] { 1, 1, 1, 1, 1, 1, 1, 1 };
+	[SerializeField] string[] testTopics = new string[4] { "1", "1", "1", "1" };
+	[SerializeField] List<TestInfo> results = new List<TestInfo>();
+	List<int> remainInd = new List<int>();
+	TestInfo test;
+	int predInd;
+	int ppredInd;
+	System.Random r = new System.Random();
+	[SerializeField] List<int> testInd = new List<int>();
 
-    void Awake()
+	void Awake()
     {
         data = new List<string>(Resources.LoadAll<TextAsset>("Data")
         .Select(e => e.name));
@@ -85,4 +95,189 @@ public class DataScript : ScriptableObject
         get => scrollbarValue[level];
         set => scrollbarValue[level] = value;
     }
+
+	public int S2ItemIndex
+	{
+		get => itemIndex[level + 4];
+		set => itemIndex[level + 4] = value;
+	}
+	public float S2ScrollbarValue
+	{
+		get => scrollbarValue[level + 4];
+		set => scrollbarValue[level + 4] = value;
+	}
+
+	public SortedSet<int> TestTopics
+	{
+		get
+		{
+			if (testTopics[level] == null || testTopics[level] == "")
+				return new SortedSet<int>();
+			return new SortedSet<int>(testTopics[level]
+			.Split(',').Select(e => int.Parse(e) - 1));
+		}
+		set => testTopics[level] = string.Join(",", value.Select(e => e + 1));
+	}
+
+	public void InitTest()
+	{
+		words.Clear();
+		foreach (int ind in TestTopics)
+			GetWords(ind, false);
+		remainInd.Clear();
+		remainInd.AddRange(Enumerable.Range(0, words.Count));
+		remainInd.AddRange(Enumerable.Range(0, words.Count));
+		test = new TestInfo(this);
+		predInd = -1;
+		ppredInd = -1;
+	}
+
+	string getTitle() =>
+		$"Вопрос {test.Answers + 1} из {test.Questions}\nРейтинг: {test.Rating * 100:f2}";
+	float getProgress() => (float)test.Answers / test.Questions;
+
+	public bool NextQuestion(string[] labels, out string title, out float progress)
+	{
+		if (test.Answers == test.Questions)
+		{
+			title = $"Итоговый рейтинг: {test.Rating * 100:f2}\nОценка: {test.Mark}";
+			progress = 1;
+			return false;
+		}
+		//(1)
+		title = getTitle();
+		progress = getProgress();
+		//(2)
+		int q = -1;
+		for (int i = 0; i < 10; i++)
+		{
+			q = r.Next(remainInd.Count);
+			if (remainInd[q] != predInd && remainInd[q] != ppredInd)
+				break;
+		}
+		int qInd = remainInd[q];
+		//(3)
+		remainInd.RemoveAt(q);
+		ppredInd = predInd;
+		predInd = qInd;
+		//(4)
+		testInd.Clear();
+		testInd.Add(qInd);
+		for (int i = 0; i < 4; i++)
+		{
+			int ind = r.Next(words.Count);
+			while (testInd.Contains(ind))
+				ind = r.Next(words.Count);
+			testInd.Add(ind);
+		}
+		testInd.Insert(r.Next(1, 6), qInd);
+		//(5)
+		if (TestType == 1)
+		{
+			labels[0] = words[testInd[0]].Ru;
+			for (int i = 1; i < 6; i++)
+				labels[i] = words[testInd[i]].En;
+		}
+		else
+		{
+			labels[0] = TestType == 0 ? words[testInd[0]].En : "[Audio]";
+			if (TestType == 2)
+				PlayAudio(testInd[0]);
+			for (int i = 1; i < 6; i++)
+				labels[i] = words[testInd[i]].Ru;
+		}
+		return true;
+	}
+
+	public string CheckAnswer(int ansInd, ref string title, ref float progress)
+	{
+		if (testInd[ansInd] == testInd[0])
+		{
+			test.Answers++;
+			return "";
+		}
+		test.Errors++;
+		test.Questions += 2;
+		remainInd.Add(testInd[ansInd]);
+		remainInd.Add(testInd[0]);
+		title = getTitle();
+		progress = getProgress();
+		if (TestType == 2)
+			PlayAudio(testInd[ansInd]);
+		if (TestType == 1)
+			return $"{words[testInd[ansInd]].En} \u2013 {words[testInd[ansInd]].Ru}";
+		return $"{words[testInd[ansInd]].Ru} \u2013 {words[testInd[ansInd]].En}";
+	}
+
+	public void AdditionalTestAction()
+	{
+		if (TestType != 1)
+			PlayAudio(testInd[0]);
+	}
+
+	public void SaveResult()
+	{
+		if (test.Mark > 2)
+			results.Add(test);
+	}
+}
+
+	[System.Serializable]
+public class TestInfo
+{
+	public int Answers;
+	public int Errors;
+	public int Questions;
+	public int Type;
+	public int Level;
+	public string Topics;
+	public int WordCount;
+	public string StartTime;
+	public TestInfo(DataScript data)
+	{
+		Answers = 0;
+		Errors = 0;
+		Questions = 2 * data.WordCount;
+		Type = data.TestType;
+		Level = data.Level;
+		Topics = data.TestTopicsToString();
+		WordCount = data.WordCount;
+		StartTime = System.DateTime.Now.ToString("yy.MM.dd HH:mm");
+	}
+	public TestInfo(string info)
+	{
+		var s = info.Split('|');
+		if (s.Length != 8)
+			return;
+		Answers = int.Parse(s[0]);
+		Errors = int.Parse(s[1]);
+		Questions = int.Parse(s[2]);
+		Type = int.Parse(s[3]);
+		Level = int.Parse(s[4]);
+		Topics = s[5];
+		WordCount = int.Parse(s[6]);
+		StartTime = s[7];
+	}
+	public override string ToString() =>
+	$"{Answers}|{Errors}|{Questions}|{Type}|{Level}|{Topics}|{WordCount}|{StartTime}";
+	public float Rating
+	{
+		get => (Answers > Errors) ?
+		Mathf.Pow((float)(Answers - Errors) / Questions, 2) : 0;
+	}
+	public int Mark
+	{
+		get
+		{
+			float r = Rating;
+			if (r < 0.6f)
+				return 2;
+			if (r < 0.7f)
+				return 3;
+			if (r < 0.85f)
+				return 4;
+			return 5;
+		}
+	}
+
 }
