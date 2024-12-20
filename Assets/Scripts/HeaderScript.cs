@@ -9,15 +9,21 @@ public class HeaderScript : MonoBehaviour
     public DataScript data;
     Button lBut, rBut;
     int curInd;
+    public Canvas menuCanvas;
+    MenuScript menu;
+    CanvasGroup canvasGroup;
     void Start()
     {
         lBut = transform.GetChild(0).GetComponent<Button>();
         rBut = transform.GetChild(2).GetComponent<Button>();
         curInd = SceneManager.GetActiveScene().buildIndex;
+        canvasGroup = GameObject.Find("Canvas").GetComponent<CanvasGroup>();
+        if (menuCanvas != null)
+            menu = menuCanvas.GetComponent<MenuScript>();
     }
     void Update()
     {
-        if (!Input.anyKeyDown)
+        if (!Input.anyKeyDown ||canvasGroup !=null && !canvasGroup.interactable)
             return;
         if (Input.GetKeyDown(KeyCode.Escape))
             OnClickHandler(-1);
@@ -52,6 +58,11 @@ public class HeaderScript : MonoBehaviour
 #if UNITY_EDITOR
 UnityEditor.EditorApplication.isPlaying = false;
 #endif
+        }
+        else if (index == -2)
+        {
+            if (menu != null)
+                menu.ShowMenu();
         }
     }
 
