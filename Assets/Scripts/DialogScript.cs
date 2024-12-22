@@ -17,16 +17,18 @@ public class DialogScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        dialogPanel = transform.GetChild(0).transform;
+        dialogPanel = GameObject.Find("DialogPanel").transform;
         for (int i = 0; i < buttons.Length; i++)
-            buttons[i] = dialogPanel.GetChild(2)
-                .GetChild(i).GetComponent<Button>(); gameObject.SetActive(false);
+            buttons[i] = dialogPanel.GetChild(2).GetChild(i).GetComponent<Button>();
+        gameObject.SetActive(false);
+        es = GameObject.Find("EventSystem").GetComponent<EventSystem>();
     }
     public void ShowDialog(string header, string text,
-string[] buttonText = null, System.Action<int> dialogHandler = null, int defaultIndex = 0, int cancelIndex = 0)
+        string[] buttonText = null, System.Action<int> dialogHandler = null, int defaultIndex = 0, int cancelIndex = 0)
     {
         //(1)
-        dialogPanel.GetChild(0).GetComponentInChildren<Text>().text = header; dialogPanel.GetChild(1).GetComponent<Text>().text = text;
+        dialogPanel.GetChild(0).GetComponentInChildren<Text>().text = header;
+        dialogPanel.GetChild(1).GetComponent<Text>().text = text;
         int btnCount = 0;
         if (buttonText != null)
             btnCount = buttonText.Length;
@@ -42,16 +44,21 @@ string[] buttonText = null, System.Action<int> dialogHandler = null, int default
             for (int i = 0; i < btnCount; i++)
                 SetButton(buttonText[i], dialogHandler, i);
         }
-        for (int i = btnCount; i < buttons.Length; i++) buttons[i].gameObject.SetActive(false);
-        defaultInd = defaultIndex < btnCount ? defaultIndex : 0; cancelInd = cancelIndex < btnCount ? cancelIndex : 0;
+        for (int i = btnCount; i < buttons.Length; i++)
+            buttons[i].gameObject.SetActive(false);
+        defaultInd = defaultIndex < btnCount ? defaultIndex : 0;
+        cancelInd = cancelIndex < btnCount ? cancelIndex : 0;
         //(2)
         mainCanvasGroup = mainCanvas.GetComponent<CanvasGroup>();
         if (mainCanvasGroup == null)
         {
             Debug.LogError("The main canvas doesn't contain the CanvasGroup component.");
-return;
+            return;
         }
-        mainCanvasGroup.interactable = false; mainSelectedObject = es.currentSelectedGameObject; gameObject.SetActive(true);
+        mainCanvasGroup.interactable = false;
+        Debug.Log(es);
+        mainSelectedObject = es.currentSelectedGameObject;
+        gameObject.SetActive(true);
         es.SetSelectedGameObject(buttons[defaultInd].gameObject);
     }
     void SetButton(string buttonText, System.Action<int> dialogHandler, int index)
