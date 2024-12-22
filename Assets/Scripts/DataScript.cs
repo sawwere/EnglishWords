@@ -148,14 +148,14 @@ public class DataScript : ScriptableObject
 	}
 
 	string getTitle() =>
-		$"������ {test.Answers + 1} �� {test.Questions}\n�������: {test.Rating * 100:f2}";
+		$"Вопрос {test.Answers + 1} из {test.Questions}\nРейтинг: {test.Rating * 100:f2}";
 	float getProgress() => (float)test.Answers / test.Questions;
 
 	public bool NextQuestion(string[] labels, out string title, out float progress)
 	{
 		if (test.Answers == test.Questions)
 		{
-			title = $"�������� �������: {test.Rating * 100:f2}\n������: {test.Mark}";
+			title = $"Итоговый рейтинг: {test.Rating * 100:f2}\nОценка: {test.Mark}";
 			progress = 1;
 			return false;
 		}
